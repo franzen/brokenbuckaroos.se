@@ -132,10 +132,11 @@ export type FeedItem = FeedPost | FeedEvent;
 
 type ListResult<T> = { items: T[]; page: number; perPage: number; totalItems: number; totalPages: number };
 
-const CMS_URL = (process.env.CMS_URL || process.env.NEXT_PUBLIC_CMS_URL || "").replace(/\/$/, "");
-const SITE_KEY = process.env.CMS_SITE_KEY || process.env.NEXT_PUBLIC_CMS_SITE_KEY || "broken-buckaroos";
-const PRIMARY_MENU_KEY = process.env.CMS_PRIMARY_MENU_KEY || "main";
-const FOOTER_MENU_KEY = process.env.CMS_FOOTER_MENU_KEY || "footer";
+const runtimeEnv = import.meta.env as Record<string, string | undefined>;
+const CMS_URL = (runtimeEnv.VITE_CMS_URL || "").replace(/\/$/, "");
+const SITE_KEY = runtimeEnv.VITE_CMS_SITE_KEY || "broken-buckaroos";
+const PRIMARY_MENU_KEY = runtimeEnv.VITE_CMS_PRIMARY_MENU_KEY || "main";
+const FOOTER_MENU_KEY = runtimeEnv.VITE_CMS_FOOTER_MENU_KEY || "footer";
 
 function quoted(value: string) {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
@@ -163,7 +164,6 @@ async function list<T extends CmsRecord>(collection: string, options: {
   if (options.sort) params.set("sort", options.sort);
   if (options.expand) params.set("expand", options.expand);
   const response = await fetch(`${CMS_URL}/api/collections/${encodeURIComponent(collection)}/records?${params}`, {
-    cache: "no-store",
     headers: { Accept: "application/json" },
   });
   if (!response.ok) {

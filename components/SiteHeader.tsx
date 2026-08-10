@@ -1,10 +1,4 @@
-"use client";
-
-/* CMS media is already resized by PocketBase's thumbnail endpoint. */
-/* eslint-disable @next/next/no-img-element */
-
 import { ChevronDown, Menu, X } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { NavigationLink } from "@/lib/cms";
 
@@ -12,7 +6,7 @@ type Props = { title: string; logoUrl: string; logoAlt: string; navigation: Navi
 
 function NavAnchor({ item, onClick }: { item: NavigationLink; onClick?: () => void }) {
   const external = item.newTab || /^https?:\/\//i.test(item.href);
-  if (!external) return <Link href={item.href} onClick={onClick}>{item.label}</Link>;
+  if (!external) return <a href={item.href} onClick={onClick}>{item.label}</a>;
   return (
     <a href={item.href} target={item.newTab ? "_blank" : undefined} rel={item.newTab ? "noopener noreferrer" : undefined} onClick={onClick}>
       {item.label}
@@ -31,9 +25,9 @@ export function SiteHeader({ title, logoUrl, logoAlt, navigation }: Props) {
     <header className="site-header">
       <a className="skip-link" href="#main">Hoppa till innehållet</a>
       <div className="header-inner">
-        <Link className="brand" href="/" aria-label={`${title}, startsida`}>
+        <a className="brand" href="/" aria-label={`${title}, startsida`}>
           {logoUrl ? <img src={logoUrl} alt={logoAlt || title} /> : <span>{title}</span>}
-        </Link>
+        </a>
         {navigation.length > 0 && (
           <nav className="desktop-nav" aria-label="Huvudnavigation">
             <ul>

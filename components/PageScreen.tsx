@@ -1,5 +1,3 @@
-/* CMS media is already resized by PocketBase's thumbnail endpoint. */
-/* eslint-disable @next/next/no-img-element */
 import { CalendarDays, MapPin } from "lucide-react";
 import type { ContentTranslation, SiteContext } from "@/lib/cms";
 import { eventRecord, mediaAlt, mediaUrl, postCover, socialLinks } from "@/lib/cms";
@@ -10,13 +8,14 @@ import { SiteHeader } from "./SiteHeader";
 function ContentIntro({ content }: { content: ContentTranslation }) {
   const event = eventRecord(content);
   const date = event?.start_at ? new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "long", year: "numeric", hour: event.all_day ? undefined : "2-digit", minute: event.all_day ? undefined : "2-digit" }).format(new Date(String(event.start_at))) : "";
+  const venue = event?.venue ? String(event.venue) : "";
   if (!content.summary && !content.byline && !event) return null;
   return (
     <header className="content-intro">
       <p className="eyebrow">{content.kind === "event" ? "Spelning" : content.kind === "post" ? "Aktuellt" : "Broken Buckaroos"}</p>
       <h1>{content.title}</h1>
       {content.summary && <p className="lead">{content.summary}</p>}
-      {(content.byline || date || event?.venue) && <div className="content-meta">{content.byline && <span>{content.byline}</span>}{date && <span><CalendarDays aria-hidden="true" size={17} />{date}</span>}{event?.venue && <span><MapPin aria-hidden="true" size={17} />{String(event.venue)}</span>}</div>}
+      {(content.byline || date || venue) && <div className="content-meta">{content.byline && <span>{content.byline}</span>}{date && <span><CalendarDays aria-hidden="true" size={17} />{date}</span>}{venue && <span><MapPin aria-hidden="true" size={17} />{venue}</span>}</div>}
     </header>
   );
 }

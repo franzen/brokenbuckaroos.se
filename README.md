@@ -1,25 +1,21 @@
 # Broken Buckaroos
 
-Publik webbplats för Broken Buckaroos, byggd med vinext och Oortis CMS.
+Statisk webbplats för Broken Buckaroos, byggd med React och Vite för GitHub
+Pages. Allt publikt innehåll hämtas dynamiskt från Oortis CMS i besökarens
+webbläsare.
 
-## Kom igång
+## Lokal utveckling
 
-1. Kopiera `.env.example` till `.env` och ange adressen till CMS:et.
-2. Installera beroenden med `npm install`.
-3. Starta utvecklingsservern med `npm run dev`.
+1. Kopiera `.env.example` till `.env` och ange CMS-adressen.
+2. Kör `npm install`.
+3. Kör `npm run dev`.
 
-CMS-sajten identifieras med `CMS_SITE_KEY`. Navigation hämtas från menyerna
-`main` och `footer` om inget annat anges. Endast publicerat, anonymt läsbart
-innehåll visas.
+## GitHub Pages
 
-## Innehållsstöd
+Workflow-filen bygger och publicerar automatiskt `dist` när `main` uppdateras.
+Lägg CMS-adressen i repository-variabeln `CMS_URL` under GitHub Actions.
+`404.html` är en kopia av appskalet så att alla CMS-drivna rutter fungerar även
+vid direktlänkning.
 
-Alla Oortis CMS v1-block stöds: hero, rich text, image, image/text,
-call-to-action, quote, content feed och embed. Sidor, inlägg, evenemang,
-navigation, metadata, omdirigeringar och media hämtas dynamiskt.
-
-## Kvalitetskontroll
-
-- `npm run build`
-- `npm run lint`
-- `npm test`
+Alla Oortis CMS v1-block stöds, liksom navigation, media, inlägg, evenemang,
+omdirigeringar och dynamisk metadata.

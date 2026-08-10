@@ -1,8 +1,7 @@
-/* CMS media is already resized by PocketBase's thumbnail endpoint. */
-/* eslint-disable @next/next/no-img-element */
 import { ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { ButtonData, ContentBlock, FeedEvent, FeedPost, MediaRecord, SiteContext } from "@/lib/cms";
-import { getFeed, mediaAlt, mediaUrl } from "@/lib/cms";
+import { getFeed, type FeedItem, mediaAlt, mediaUrl } from "@/lib/cms";
 import { RichText } from "./RichText";
 
 function Button({ button }: { button: ButtonData }) {
@@ -61,8 +60,15 @@ function embedUrl(url: string) {
   return "";
 }
 
-async function FeedBlock({ block, context }: { block: Extract<ContentBlock, { type: "content_feed" }>; context: SiteContext }) {
-  const items = await getFeed(context.site.id, context.locale, block.data.collection, block.data.range, block.data.limit);
+function FeedBlock({ block, context }: { block: Extract<ContentBlock, { type: "content_feed" }>; context: SiteContext }) {
+  const [items, setItems] = useState<FeedItem[]>([]);
+  useEffect(() => {
+    let active = true;
+    getFeed(context.site.id, context.locale, block.data.collection, block.data.range, block.data.limit)
+      .then((result) => { if (active) setItems(result); })
+      .catch(() => { if (active) setItems([]); });
+    return () => { active = false; };
+  }, [block.data.collection, block.data.limit, block.data.range, context.locale, context.site.id]);
   if (!items.length) return null;
   return (
     <section className={`block feed-block ${block.data.collection === "events" ? "events-feed" : "posts-feed"}`} aria-label={block.data.collection === "events" ? "Evenemang" : "Aktuellt"}>
@@ -74,7 +80,7 @@ async function FeedBlock({ block, context }: { block: Extract<ContentBlock, { ty
   );
 }
 
-export async function BlockRenderer({ block, context, isFirst }: { block: ContentBlock; context: SiteContext; isFirst: boolean }) {
+export function BlockRenderer({ block, context, isFirst }: { block: ContentBlock; context: SiteContext; isFirst: boolean }) {
   const media = "mediaId" in block.data ? imageFor(context.media, String(block.data.mediaId || "")) : null;
   switch (block.type) {
     case "hero":
