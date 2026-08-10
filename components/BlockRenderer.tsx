@@ -1,8 +1,9 @@
-import { ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ButtonData, ContentBlock, FeedEvent, FeedPost, MediaRecord, SiteContext } from "@/lib/cms";
 import { getFeed, type FeedItem, mediaAlt, mediaUrl, siteHref } from "@/lib/cms";
 import { RichText } from "./RichText";
+import { EventCalendar } from "./EventCalendar";
 
 function Button({ button }: { button: ButtonData }) {
   const external = /^https?:\/\//i.test(button.url);
@@ -24,26 +25,6 @@ function PostCard({ item, locale }: { item: FeedPost; locale: string }) {
         {item.summary && <p>{item.summary}</p>}
         <a className="text-link" href={siteHref(item.href)}>Läs mer <ArrowUpRight aria-hidden="true" size={16} /></a>
       </div>
-    </article>
-  );
-}
-
-function EventCard({ item, locale }: { item: FeedEvent; locale: string }) {
-  const day = new Intl.DateTimeFormat(locale, { day: "2-digit" }).format(new Date(item.start));
-  const month = new Intl.DateTimeFormat(locale, { month: "short" }).format(new Date(item.start)).replace(".", "");
-  const weekday = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(new Date(item.start));
-  const time = item.allDay ? "Heldag" : new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(new Date(item.start));
-  const href = item.externalUrl || item.href;
-  return (
-    <article className="event-card">
-      <div className="event-date"><strong>{day}</strong><span>{month}</span></div>
-      <div className="event-content">
-        <p className="card-meta"><CalendarDays aria-hidden="true" size={16} />{weekday} · {time}</p>
-        <h3><a href={siteHref(href)} target={item.externalUrl ? "_blank" : undefined} rel={item.externalUrl ? "noopener noreferrer" : undefined}>{item.title}</a></h3>
-        {(item.venue || item.address) && <p className="event-place"><MapPin aria-hidden="true" size={17} />{[item.venue, item.address].filter(Boolean).join(", ")}</p>}
-        {item.summary && <p>{item.summary}</p>}
-      </div>
-      <a className="event-arrow" href={siteHref(href)} target={item.externalUrl ? "_blank" : undefined} rel={item.externalUrl ? "noopener noreferrer" : undefined} aria-label={`Läs mer om ${item.title}`}><ArrowUpRight aria-hidden="true" /></a>
     </article>
   );
 }
@@ -73,9 +54,9 @@ function FeedBlock({ block, context }: { block: Extract<ContentBlock, { type: "c
   return (
     <section className={`block feed-block ${block.data.collection === "events" ? "events-feed" : "posts-feed"}`} aria-label={block.data.collection === "events" ? "Evenemang" : "Aktuellt"}>
       <div className="section-heading"><p>{block.data.collection === "events" ? "På scen" : "Senaste nytt"}</p><h2>{block.data.collection === "events" ? "Kommande spelningar" : "Från Broken Buckaroos"}</h2></div>
-      <div className={block.data.collection === "events" ? "event-list" : "feed-grid"}>
-        {items.map((item) => item.kind === "post" ? <PostCard key={item.id} item={item} locale={context.locale} /> : <EventCard key={item.id} item={item} locale={context.locale} />)}
-      </div>
+      {block.data.collection === "events"
+        ? <EventCalendar events={items.filter((item): item is FeedEvent => item.kind === "event")} locale={context.locale} />
+        : <div className="feed-grid">{items.filter((item): item is FeedPost => item.kind === "post").map((item) => <PostCard key={item.id} item={item} locale={context.locale} />)}</div>}
     </section>
   );
 }

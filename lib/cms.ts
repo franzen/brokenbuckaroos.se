@@ -128,6 +128,8 @@ export type FeedEvent = {
   externalUrl: string;
 };
 
+type Recurrence = "none" | "daily" | "weekly" | "monthly" | "yearly";
+
 export type FeedItem = FeedPost | FeedEvent;
 
 type ListResult<T> = { items: T[]; page: number; perPage: number; totalItems: number; totalPages: number };
@@ -358,28 +360,78 @@ export async function getFeed(siteId: string, locale: CmsLocale, collection: "po
     perPage: 500,
   });
   const now = Date.now();
+  const windowStart = range === "upcoming" ? new Date(now) : new Date(new Date(now).setFullYear(new Date(now).getFullYear() - 2));
+  const windowEnd = range === "past" ? new Date(now) : new Date(new Date(now).setFullYear(new Date(now).getFullYear() + 3));
   return records.flatMap((record): FeedEvent[] => {
     const event = asRecord(record.expand?.event);
     if (!event) return [];
-    const start = String(event.start_at || "");
-    const end = String(event.end_at || start);
-    const timestamp = Date.parse(start);
-    if (range === "upcoming" && timestamp < now) return [];
-    if (range === "past" && timestamp >= now) return [];
-    return [{
-      kind: "event",
-      id: record.id,
-      title: String(record.title || ""),
-      summary: String(record.summary || ""),
-      href: `/${record.slug}`,
-      start,
-      end,
-      allDay: Boolean(event.all_day),
-      venue: String(event.venue || ""),
-      address: String(event.address || ""),
-      externalUrl: String(event.external_url || ""),
-    }];
+    const starts = expandOccurrences(
+      new Date(String(event.start_at || "")),
+      new Date(String(event.end_at || event.start_at || "")),
+      String(event.recurrence || "none") as Recurrence,
+      Math.max(1, Number(event.recurrence_interval || 1)),
+      event.recurrence_end ? new Date(String(event.recurrence_end)) : null,
+      windowStart,
+      windowEnd,
+    );
+    return starts.flatMap(({ start, end }, occurrenceIndex) => {
+      if (range === "upcoming" && end.getTime() < now) return [];
+      if (range === "past" && end.getTime() >= now) return [];
+      return [{
+        kind: "event",
+        id: `${record.id}-${occurrenceIndex}-${start.toISOString()}`,
+        title: String(record.title || ""),
+        summary: String(record.summary || ""),
+        href: `/${record.slug}`,
+        start: start.toISOString(),
+        end: end.toISOString(),
+        allDay: Boolean(event.all_day),
+        venue: String(event.venue || ""),
+        address: String(event.address || ""),
+        externalUrl: String(event.external_url || ""),
+      }];
+    });
   }).sort((a, b) => Date.parse(a.start) - Date.parse(b.start)).slice(0, boundedLimit);
+}
+
+function addRecurrence(date: Date, recurrence: Recurrence, interval: number) {
+  const next = new Date(date);
+  if (recurrence === "daily") next.setUTCDate(next.getUTCDate() + interval);
+  if (recurrence === "weekly") next.setUTCDate(next.getUTCDate() + (7 * interval));
+  if (recurrence === "monthly") {
+    const day = next.getUTCDate();
+    next.setUTCDate(1);
+    next.setUTCMonth(next.getUTCMonth() + interval);
+    const lastDay = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
+    next.setUTCDate(Math.min(day, lastDay));
+  }
+  if (recurrence === "yearly") {
+    const month = next.getUTCMonth();
+    const day = next.getUTCDate();
+    next.setUTCDate(1);
+    next.setUTCFullYear(next.getUTCFullYear() + interval);
+    next.setUTCMonth(month);
+    const lastDay = new Date(Date.UTC(next.getUTCFullYear(), month + 1, 0)).getUTCDate();
+    next.setUTCDate(Math.min(day, lastDay));
+  }
+  return next;
+}
+
+function expandOccurrences(start: Date, end: Date, recurrence: Recurrence, interval: number, recurrenceEnd: Date | null, windowStart: Date, windowEnd: Date) {
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return [];
+  const duration = Math.max(0, end.getTime() - start.getTime());
+  const occurrences: Array<{ start: Date; end: Date }> = [];
+  let current = new Date(start);
+  const finalDate = recurrenceEnd && recurrenceEnd < windowEnd ? recurrenceEnd : windowEnd;
+  for (let index = 0; index < 10000 && current <= finalDate; index += 1) {
+    const occurrenceEnd = new Date(current.getTime() + duration);
+    if (occurrenceEnd >= windowStart && current <= windowEnd) occurrences.push({ start: new Date(current), end: occurrenceEnd });
+    if (recurrence === "none") break;
+    const next = addRecurrence(current, recurrence, interval);
+    if (next.getTime() <= current.getTime()) break;
+    current = next;
+  }
+  return occurrences;
 }
 
 export function eventRecord(content: ContentTranslation) {
