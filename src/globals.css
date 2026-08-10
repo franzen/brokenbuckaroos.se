@@ -289,6 +289,56 @@ body:has(.without-hero) .site-header { background: var(--ink); position: relativ
 .cms-state h1 { font-size: clamp(4rem, 10vw, 8rem); }
 .cms-state > div > p:last-child { color: var(--sand); font-size: 1.1rem; margin-top: 26px; max-width: 640px; }
 
+.email-dialog-backdrop {
+  align-items: center;
+  background: rgb(20 10 6 / 78%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 200;
+}
+
+.email-dialog {
+  background: var(--cream);
+  box-shadow: 0 30px 90px rgb(0 0 0 / 42%);
+  color: var(--ink);
+  max-width: 620px;
+  padding: clamp(36px, 7vw, 68px);
+  position: relative;
+  width: 100%;
+}
+
+.email-dialog-close {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  height: 44px;
+  justify-content: center;
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  width: 44px;
+}
+
+.email-dialog-close svg { height: 20px; width: 20px; }
+.email-dialog-icon { align-items: center; background: var(--copper); color: var(--white); display: flex; height: 52px; justify-content: center; margin-bottom: 28px; width: 52px; }
+.email-dialog-icon svg { height: 23px; width: 23px; }
+.email-dialog h2 { font-size: clamp(3.1rem, 8vw, 5rem); }
+.email-dialog-help { color: #654f43; margin-top: 20px; max-width: 480px; }
+.email-address-row { align-items: center; border: 1px solid var(--line); display: flex; gap: 16px; justify-content: space-between; margin-top: 30px; min-width: 0; padding: 10px 10px 10px 18px; }
+.email-address-row > span { font-size: .9rem; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.email-address-row button { align-items: center; background: var(--ink); border: 0; color: var(--white); cursor: pointer; display: inline-flex; flex: 0 0 auto; font-size: .7rem; font-weight: 700; gap: 7px; letter-spacing: .08em; min-height: 42px; padding: 10px 14px; text-transform: uppercase; }
+.email-address-row button svg { height: 16px; width: 16px; }
+.webmail-actions { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-top: 12px; }
+.webmail-actions a { align-items: center; border: 1px solid var(--ink); display: flex; font-size: .72rem; font-weight: 700; gap: 10px; justify-content: space-between; letter-spacing: .08em; min-height: 50px; padding: 12px 16px; text-decoration: none; text-transform: uppercase; transition: background .2s ease, color .2s ease; }
+.webmail-actions a:hover { background: var(--ink); color: var(--white); }
+.webmail-actions svg { height: 16px; width: 16px; }
+
 .reveal { animation: reveal .75s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes reveal { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -341,6 +391,11 @@ body:has(.without-hero) .site-header { background: var(--ink); position: relativ
   .footer-grid { grid-template-columns: 1fr; padding-bottom: 55px; }
   .footer-contact { grid-column: auto; }
   .footer-bottom { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .email-dialog { padding: 56px 22px 28px; }
+  .email-dialog-icon { margin-bottom: 22px; }
+  .email-address-row { align-items: stretch; flex-direction: column; }
+  .email-address-row button { justify-content: center; width: 100%; }
+  .webmail-actions { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
