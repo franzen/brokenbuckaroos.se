@@ -11,7 +11,7 @@ test("creates a GitHub Pages-ready static build", async () => {
   assert.match(index, /<html lang="sv">/);
   assert.match(index, /Broken Buckaroos/);
   assert.match(index, /og\.png/);
-  assert.match(index, /src="\/assets\/[^"]+\.js"/);
+  assert.match(index, /src="\/brokenbuckaroos\.se\/assets\/[^"]+\.js"/);
   await access(new URL("../dist/og.png", import.meta.url));
   await access(new URL("../dist/favicon.png", import.meta.url));
 });

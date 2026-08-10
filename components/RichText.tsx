@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { RichTextNode } from "@/lib/cms";
+import { siteHref, type RichTextNode } from "@/lib/cms";
 
 function safeHref(value: unknown) {
   if (typeof value !== "string") return "";
@@ -19,7 +19,7 @@ function withMarks(node: RichTextNode, content: ReactNode, key: string): ReactNo
         const href = safeHref(mark.attrs?.href);
         if (!href) return child;
         const external = /^https?:\/\//i.test(href);
-        return <a key={markKey} href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}>{child}</a>;
+        return <a key={markKey} href={siteHref(href)} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}>{child}</a>;
       }
       default: return child;
     }

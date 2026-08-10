@@ -138,6 +138,12 @@ const SITE_KEY = runtimeEnv.VITE_CMS_SITE_KEY || "broken-buckaroos";
 const PRIMARY_MENU_KEY = runtimeEnv.VITE_CMS_PRIMARY_MENU_KEY || "main";
 const FOOTER_MENU_KEY = runtimeEnv.VITE_CMS_FOOTER_MENU_KEY || "footer";
 
+export function siteHref(href: string) {
+  if (!href.startsWith("/") || href.startsWith("//")) return href;
+  const base = runtimeEnv.BASE_URL || "/";
+  return `${base.replace(/\/$/, "")}${href}` || "/";
+}
+
 function quoted(value: string) {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }

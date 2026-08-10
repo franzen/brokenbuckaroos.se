@@ -1,12 +1,12 @@
 import { ChevronDown, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { NavigationLink } from "@/lib/cms";
+import { siteHref, type NavigationLink } from "@/lib/cms";
 
 type Props = { title: string; logoUrl: string; logoAlt: string; navigation: NavigationLink[] };
 
 function NavAnchor({ item, onClick }: { item: NavigationLink; onClick?: () => void }) {
   const external = item.newTab || /^https?:\/\//i.test(item.href);
-  if (!external) return <a href={item.href} onClick={onClick}>{item.label}</a>;
+  if (!external) return <a href={siteHref(item.href)} onClick={onClick}>{item.label}</a>;
   return (
     <a href={item.href} target={item.newTab ? "_blank" : undefined} rel={item.newTab ? "noopener noreferrer" : undefined} onClick={onClick}>
       {item.label}
@@ -25,7 +25,7 @@ export function SiteHeader({ title, logoUrl, logoAlt, navigation }: Props) {
     <header className="site-header">
       <a className="skip-link" href="#main">Hoppa till innehållet</a>
       <div className="header-inner">
-        <a className="brand" href="/" aria-label={`${title}, startsida`}>
+        <a className="brand" href={siteHref("/")} aria-label={`${title}, startsida`}>
           {logoUrl ? <img src={logoUrl} alt={logoAlt || title} /> : <span>{title}</span>}
         </a>
         {navigation.length > 0 && (

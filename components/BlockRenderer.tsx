@@ -1,12 +1,12 @@
 import { ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ButtonData, ContentBlock, FeedEvent, FeedPost, MediaRecord, SiteContext } from "@/lib/cms";
-import { getFeed, type FeedItem, mediaAlt, mediaUrl } from "@/lib/cms";
+import { getFeed, type FeedItem, mediaAlt, mediaUrl, siteHref } from "@/lib/cms";
 import { RichText } from "./RichText";
 
 function Button({ button }: { button: ButtonData }) {
   const external = /^https?:\/\//i.test(button.url);
-  return <a className={`button button-${button.style}`} href={button.url} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}>{button.label}<ArrowUpRight aria-hidden="true" size={17} /></a>;
+  return <a className={`button button-${button.style}`} href={siteHref(button.url)} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}>{button.label}<ArrowUpRight aria-hidden="true" size={17} /></a>;
 }
 
 function imageFor(media: Map<string, MediaRecord>, id: string) {
@@ -17,12 +17,12 @@ function PostCard({ item, locale }: { item: FeedPost; locale: string }) {
   const date = item.date ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" }).format(new Date(item.date)) : "";
   return (
     <article className="feed-card post-card">
-      {item.image && <a href={item.href} className="feed-card-image"><img src={mediaUrl(item.image, "960x640")} alt={mediaAlt(item.image, locale === "sv" ? "sv" : "en")} loading="lazy" /></a>}
+      {item.image && <a href={siteHref(item.href)} className="feed-card-image"><img src={mediaUrl(item.image, "960x640")} alt={mediaAlt(item.image, locale === "sv" ? "sv" : "en")} loading="lazy" /></a>}
       <div className="feed-card-content">
         {date && <p className="card-meta">{date}</p>}
-        <h3><a href={item.href}>{item.title}</a></h3>
+        <h3><a href={siteHref(item.href)}>{item.title}</a></h3>
         {item.summary && <p>{item.summary}</p>}
-        <a className="text-link" href={item.href}>Läs mer <ArrowUpRight aria-hidden="true" size={16} /></a>
+        <a className="text-link" href={siteHref(item.href)}>Läs mer <ArrowUpRight aria-hidden="true" size={16} /></a>
       </div>
     </article>
   );
@@ -39,11 +39,11 @@ function EventCard({ item, locale }: { item: FeedEvent; locale: string }) {
       <div className="event-date"><strong>{day}</strong><span>{month}</span></div>
       <div className="event-content">
         <p className="card-meta"><CalendarDays aria-hidden="true" size={16} />{weekday} · {time}</p>
-        <h3><a href={href} target={item.externalUrl ? "_blank" : undefined} rel={item.externalUrl ? "noopener noreferrer" : undefined}>{item.title}</a></h3>
+        <h3><a href={siteHref(href)} target={item.externalUrl ? "_blank" : undefined} rel={item.externalUrl ? "noopener noreferrer" : undefined}>{item.title}</a></h3>
         {(item.venue || item.address) && <p className="event-place"><MapPin aria-hidden="true" size={17} />{[item.venue, item.address].filter(Boolean).join(", ")}</p>}
         {item.summary && <p>{item.summary}</p>}
       </div>
-      <a className="event-arrow" href={href} target={item.externalUrl ? "_blank" : undefined} rel={item.externalUrl ? "noopener noreferrer" : undefined} aria-label={`Läs mer om ${item.title}`}><ArrowUpRight aria-hidden="true" /></a>
+      <a className="event-arrow" href={siteHref(href)} target={item.externalUrl ? "_blank" : undefined} rel={item.externalUrl ? "noopener noreferrer" : undefined} aria-label={`Läs mer om ${item.title}`}><ArrowUpRight aria-hidden="true" /></a>
     </article>
   );
 }

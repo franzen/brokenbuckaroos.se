@@ -1,5 +1,5 @@
 import { Facebook, Instagram, Mail, Music2, Youtube } from "lucide-react";
-import type { NavigationLink, SiteTranslation, SocialLink } from "@/lib/cms";
+import { siteHref, type NavigationLink, type SiteTranslation, type SocialLink } from "@/lib/cms";
 
 function SocialIcon({ url }: { url: string }) {
   const host = url.toLowerCase();
@@ -21,7 +21,7 @@ export function SiteFooter({ title, translation, navigation, socials }: { title:
         </div>
         {(navigation.length > 0 || socials.length > 0) && (
           <div className="footer-links">
-            {navigation.length > 0 && <nav aria-label="Sidfotsnavigation"><ul>{navigation.map((item) => <li key={item.id}><a href={item.href} target={item.newTab ? "_blank" : undefined} rel={item.newTab ? "noopener noreferrer" : undefined}>{item.label}</a></li>)}</ul></nav>}
+            {navigation.length > 0 && <nav aria-label="Sidfotsnavigation"><ul>{navigation.map((item) => <li key={item.id}><a href={siteHref(item.href)} target={item.newTab ? "_blank" : undefined} rel={item.newTab ? "noopener noreferrer" : undefined}>{item.label}</a></li>)}</ul></nav>}
             {socials.length > 0 && <div className="social-links">{socials.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.label}><SocialIcon url={link.url} /></a>)}</div>}
           </div>
         )}
