@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { ButtonData, ContentBlock, FeedEvent, FeedPost, MediaRecord, SiteContext } from "@/lib/cms";
 import { getFeed, type FeedItem, mediaAlt, mediaUrl, siteHref } from "@/lib/cms";
 import { RichText } from "./RichText";
-import { EventCalendar } from "./EventCalendar";
+import { EventLists } from "./EventCalendar";
 
 function Button({ button }: { button: ButtonData }) {
   const external = /^https?:\/\//i.test(button.url);
@@ -53,9 +53,9 @@ function FeedBlock({ block, context }: { block: Extract<ContentBlock, { type: "c
   if (!items.length) return null;
   return (
     <section className={`block feed-block ${block.data.collection === "events" ? "events-feed" : "posts-feed"}`} aria-label={block.data.collection === "events" ? "Evenemang" : "Aktuellt"}>
-      <div className="section-heading"><p>{block.data.collection === "events" ? "På scen" : "Senaste nytt"}</p><h2>{block.data.collection === "events" ? "Kommande spelningar" : "Från Broken Buckaroos"}</h2></div>
+      <div className="section-heading"><p>{block.data.collection === "events" ? "På scen" : "Senaste nytt"}</p><h2>{block.data.collection === "events" ? "Spelningar" : "Från Broken Buckaroos"}</h2></div>
       {block.data.collection === "events"
-        ? <EventCalendar events={items.filter((item): item is FeedEvent => item.kind === "event")} locale={context.locale} />
+        ? <EventLists events={items.filter((item): item is FeedEvent => item.kind === "event")} locale={context.locale} />
         : <div className="feed-grid">{items.filter((item): item is FeedPost => item.kind === "post").map((item) => <PostCard key={item.id} item={item} locale={context.locale} />)}</div>}
     </section>
   );

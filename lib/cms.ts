@@ -362,7 +362,7 @@ export async function getFeed(siteId: string, locale: CmsLocale, collection: "po
   const now = Date.now();
   const windowStart = range === "upcoming" ? new Date(now) : new Date(new Date(now).setFullYear(new Date(now).getFullYear() - 2));
   const windowEnd = range === "past" ? new Date(now) : new Date(new Date(now).setFullYear(new Date(now).getFullYear() + 3));
-  return records.flatMap((record): FeedEvent[] => {
+  const expandedEvents = records.flatMap((record): FeedEvent[] => {
     const event = asRecord(record.expand?.event);
     if (!event) return [];
     const starts = expandOccurrences(
@@ -391,7 +391,12 @@ export async function getFeed(siteId: string, locale: CmsLocale, collection: "po
         externalUrl: String(event.external_url || ""),
       }];
     });
-  }).sort((a, b) => Date.parse(a.start) - Date.parse(b.start)).slice(0, boundedLimit);
+  });
+  const upcoming = expandedEvents.filter((event) => Date.parse(event.end) >= now).sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+  const past = expandedEvents.filter((event) => Date.parse(event.end) < now).sort((a, b) => Date.parse(b.start) - Date.parse(a.start));
+  if (range === "upcoming") return upcoming.slice(0, boundedLimit);
+  if (range === "past") return past.slice(0, boundedLimit);
+  return [...upcoming.slice(0, boundedLimit), ...past.slice(0, boundedLimit)];
 }
 
 function addRecurrence(date: Date, recurrence: Recurrence, interval: number) {
