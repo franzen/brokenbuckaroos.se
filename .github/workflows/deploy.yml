@@ -24,11 +24,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: actions/configure-pages@v5
+        id: pages
       - run: npm run build
         env:
           VITE_CMS_URL: ${{ vars.CMS_URL }}
           VITE_CMS_SITE_KEY: broken-buckaroos
-      - uses: actions/configure-pages@v5
+          VITE_SITE_URL: ${{ steps.pages.outputs.base_url }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -9,7 +9,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/create-404.mjs",
     "preview": "vite preview",
-    "test": "npm run build && node --test tests/static-build.test.mjs",
+    "test": "npm run test:unit && npm run build && node --test tests/static-build.test.mjs && npm run test:browser",
+    "test:unit": "vitest run",
+    "test:browser": "playwright test",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",
+    "@playwright/test": "^1.64.0",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
@@ -32,7 +35,8 @@
     "globals": "16.4.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.59.3",
-    "vite": "8.0.13"
+    "vite": "8.0.13",
+    "vitest": "^5.0.3"
   },
   "type": "module"
 }

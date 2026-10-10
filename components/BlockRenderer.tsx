@@ -4,10 +4,22 @@ import type { ButtonData, ContentBlock, FeedEvent, FeedPost, MediaRecord, SiteCo
 import { getFeed, type FeedItem, mediaAlt, mediaUrl, siteHref } from "@/lib/cms";
 import { RichText } from "./RichText";
 import { EventLists } from "./EventCalendar";
+import { safeLink } from "@/lib/links";
 
 function Button({ button }: { button: ButtonData }) {
-  const external = /^https?:\/\//i.test(button.url);
-  return <a className={`button button-${button.style}`} href={siteHref(button.url)} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}>{button.label}<ArrowUpRight aria-hidden="true" size={17} /></a>;
+  const url = safeLink(button.url);
+  if (!url) return <span className={`button button-${button.style}`} aria-disabled="true">{button.label || "…"}</span>;
+  const external = /^https?:\/\//i.test(url);
+  return <a className={`button button-${button.style}`} href={siteHref(url)} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}>{button.label || "…"}<ArrowUpRight aria-hidden="true" size={17} /></a>;
+}
+
+function Placeholder({ context, kind }: { context: SiteContext; kind: "media" | "embed" }) {
+  const text = context.locale === "en" ? (kind === "media" ? "Choose an image" : "Add an embed URL") : (kind === "media" ? "Välj en bild" : "Ange en inbäddningsadress");
+  return <div className="preview-placeholder">{text}</div>;
+}
+
+function heading(value: string, context: SiteContext) {
+  return value || (context.preview ? (context.locale === "en" ? "Add a heading" : "Ange en rubrik") : "");
 }
 
 function imageFor(media: Map<string, MediaRecord>, id: string) {
@@ -32,11 +44,13 @@ function PostCard({ item, locale }: { item: FeedPost; locale: string }) {
 function embedUrl(url: string) {
   try {
     const parsed = new URL(url);
-    if (parsed.hostname.includes("youtube.com")) return `https://www.youtube-nocookie.com/embed/${parsed.searchParams.get("v") || ""}`;
-    if (parsed.hostname === "youtu.be") return `https://www.youtube-nocookie.com/embed/${parsed.pathname.slice(1)}`;
-    if (parsed.hostname.includes("vimeo.com")) return `https://player.vimeo.com/video/${parsed.pathname.split("/").filter(Boolean).at(-1)}`;
-    if (parsed.hostname.includes("spotify.com")) return `https://open.spotify.com/embed${parsed.pathname}`;
-    if (parsed.hostname.includes("soundcloud.com")) return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}`;
+    if (!["https:", "http:"].includes(parsed.protocol)) return "";
+    const host = parsed.hostname;
+    if ((host === "youtube.com" || host === "www.youtube.com") && parsed.searchParams.get("v")) return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(parsed.searchParams.get("v")!)}`;
+    if (host === "youtu.be" && parsed.pathname.length > 1) return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(parsed.pathname.slice(1))}`;
+    if ((host === "vimeo.com" || host === "www.vimeo.com") && /^\/\d+\/?$/.test(parsed.pathname)) return `https://player.vimeo.com/video/${parsed.pathname.split("/")[1]}`;
+    if (host === "open.spotify.com") return `https://open.spotify.com/embed${parsed.pathname}`;
+    if (host === "soundcloud.com" || host === "www.soundcloud.com") return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}`;
   } catch { return ""; }
   return "";
 }
@@ -72,7 +86,8 @@ export function BlockRenderer({ block, context, isFirst }: { block: ContentBlock
           <div className="hero-grain" />
           <div className="hero-content reveal">
             {block.data.eyebrow && <p className="eyebrow">{block.data.eyebrow}</p>}
-            <h1>{block.data.heading}</h1>
+            <h1>{heading(block.data.heading, context)}</h1>
+            {!media && context.preview && <Placeholder context={context} kind="media" />}
             {block.data.text && <p className="hero-text">{block.data.text}</p>}
             {block.data.buttons?.length > 0 && <div className="button-row">{block.data.buttons.map((button) => <Button key={`${button.label}-${button.url}`} button={button} />)}</div>}
           </div>
@@ -82,24 +97,25 @@ export function BlockRenderer({ block, context, isFirst }: { block: ContentBlock
     case "rich_text":
       return <section className="block rich-text-block reveal"><RichText content={block.data.content} /></section>;
     case "image":
-      if (!media) return null;
+      if (!media) return context.preview ? <section className="block image-block"><Placeholder context={context} kind="media" /></section> : null;
       return <figure className="block image-block reveal"><img src={mediaUrl(media, "1920x0")} alt={mediaAlt(media, context.locale)} loading="lazy" />{block.data.caption && <figcaption>{block.data.caption}</figcaption>}</figure>;
     case "image_text":
       return (
         <section className={`block image-text ${block.data.imagePosition === "right" ? "image-right" : "image-left"}`}>
-          {media && <div className="image-text-media reveal"><img src={mediaUrl(media, "1280x960")} alt={mediaAlt(media, context.locale)} loading="lazy" /></div>}
-          <div className="image-text-copy reveal"><p className="eyebrow">Broken Buckaroos</p><h2>{block.data.heading}</h2><RichText content={block.data.text} /></div>
+          {media ? <div className="image-text-media reveal"><img src={mediaUrl(media, "1280x960")} alt={mediaAlt(media, context.locale)} loading="lazy" /></div> : context.preview && <Placeholder context={context} kind="media" />}
+          <div className="image-text-copy reveal"><p className="eyebrow">Broken Buckaroos</p><h2>{heading(block.data.heading, context)}</h2><RichText content={block.data.text} /></div>
         </section>
       );
     case "call_to_action":
-      return <section className="block cta-block reveal"><div><p className="eyebrow">Låt oss höras</p><h2>{block.data.heading}</h2>{block.data.text && <p>{block.data.text}</p>}</div><Button button={block.data.button} /></section>;
+      return <section className="block cta-block reveal"><div><p className="eyebrow">Låt oss höras</p><h2>{heading(block.data.heading, context)}</h2>{block.data.text && <p>{block.data.text}</p>}</div><Button button={block.data.button} /></section>;
     case "quote":
       return <figure className="block quote-block reveal"><span aria-hidden="true">“</span><blockquote>{block.data.quote}</blockquote>{block.data.attribution && <figcaption>— {block.data.attribution}</figcaption>}</figure>;
     case "content_feed":
       return <FeedBlock block={block} context={context} />;
     case "embed": {
       const src = embedUrl(block.data.url);
-      return <section className="block embed-block reveal">{src ? <iframe src={src} title={block.data.title} loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" allowFullScreen /> : <a className="embed-link" href={block.data.url} target="_blank" rel="noopener noreferrer"><span>{block.data.title}</span><ArrowUpRight aria-hidden="true" /></a>}</section>;
+      const href = /^https?:\/\//i.test(safeLink(block.data.url)) ? block.data.url : "";
+      return <section className="block embed-block reveal">{src ? <iframe src={src} title={block.data.title || "Media"} referrerPolicy="no-referrer" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" allowFullScreen /> : href ? <a className="embed-link" href={href} target="_blank" rel="noopener noreferrer"><span>{block.data.title || href}</span><ArrowUpRight aria-hidden="true" /></a> : context.preview ? <Placeholder context={context} kind="embed" /> : null}</section>;
     }
     default:
       return null;

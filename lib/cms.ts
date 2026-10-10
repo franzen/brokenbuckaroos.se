@@ -81,6 +81,7 @@ export type ContentTranslation = CmsRecord & {
   canonical_url: string;
   social_image: string;
   no_index: boolean;
+  pageData?: { id: string; site: string; template: string; parent: string; sort_order: number };
 };
 
 export type NavigationLink = {
@@ -102,6 +103,7 @@ export type SiteContext = {
   logo: MediaRecord | null;
   media: Map<string, MediaRecord>;
   locale: CmsLocale;
+  preview?: boolean;
 };
 
 export type FeedPost = {
@@ -140,6 +142,14 @@ const SITE_KEY = runtimeEnv.VITE_CMS_SITE_KEY || "broken-buckaroos";
 const PRIMARY_MENU_KEY = runtimeEnv.VITE_CMS_PRIMARY_MENU_KEY || "main";
 const FOOTER_MENU_KEY = runtimeEnv.VITE_CMS_FOOTER_MENU_KEY || "footer";
 
+export function getPreviewConfiguration(address: URL) {
+  return {
+    cmsUrl: CMS_URL,
+    siteId: async (signal: AbortSignal) => (await getSiteRecord({ signal })).id,
+    primaryUrl: runtimeEnv.VITE_SITE_URL || new URL(runtimeEnv.BASE_URL || "/", address.origin).href,
+  };
+}
+
 export function siteHref(href: string) {
   if (!href.startsWith("/") || href.startsWith("//")) return href;
   const base = runtimeEnv.BASE_URL || "/";
@@ -165,6 +175,7 @@ async function list<T extends CmsRecord>(collection: string, options: {
   sort?: string;
   expand?: string;
   perPage?: number;
+  signal?: AbortSignal;
 } = {}): Promise<T[]> {
   if (!CMS_URL) throw new Error("CMS_NOT_CONFIGURED");
   const params = new URLSearchParams({ page: "1", perPage: String(options.perPage ?? 500) });
@@ -173,6 +184,8 @@ async function list<T extends CmsRecord>(collection: string, options: {
   if (options.expand) params.set("expand", options.expand);
   const response = await fetch(`${CMS_URL}/api/collections/${encodeURIComponent(collection)}/records?${params}`, {
     headers: { Accept: "application/json" },
+    credentials: "omit",
+    signal: options.signal,
   });
   if (!response.ok) {
     if (response.status === 404) return [];
@@ -182,8 +195,8 @@ async function list<T extends CmsRecord>(collection: string, options: {
   return data.items || [];
 }
 
-async function first<T extends CmsRecord>(collection: string, filter: string, expand?: string): Promise<T | null> {
-  const items = await list<T>(collection, { filter, expand, perPage: 1 });
+async function first<T extends CmsRecord>(collection: string, filter: string, expand?: string, signal?: AbortSignal): Promise<T | null> {
+  const items = await list<T>(collection, { filter, expand, perPage: 1, signal });
   return items[0] || null;
 }
 
@@ -219,17 +232,19 @@ export function socialLinks(translation: SiteTranslation | null) {
   return parseSocialLinks(translation?.social_links);
 }
 
-async function navigationFor(siteId: string, locale: CmsLocale, menuKey: string): Promise<NavigationLink[]> {
-  const menu = await first<CmsRecord>("navigation_menus", `site = ${quoted(siteId)} && key = ${quoted(menuKey)} && active = true`);
+async function navigationFor(siteId: string, locale: CmsLocale, menuKey: string, signal?: AbortSignal): Promise<NavigationLink[]> {
+  const menu = await first<CmsRecord>("navigation_menus", `site = ${quoted(siteId)} && key = ${quoted(menuKey)} && active = true`, undefined, signal);
   if (!menu) return [];
   const items = await list<CmsRecord>("navigation_items", {
     filter: `site = ${quoted(siteId)} && menu = ${quoted(menu.id)} && active = true`,
     sort: "sort_order",
+    signal,
   });
   if (!items.length) return [];
   const itemIds = items.map((item) => `navigation_item = ${quoted(item.id)}`).join(" || ");
   const translations = await list<CmsRecord>("navigation_item_translations", {
     filter: `site = ${quoted(siteId)} && locale = ${quoted(locale)} && (${itemIds})`,
+    signal,
   });
   const byItem = new Map(translations.map((item) => [String(item.navigation_item), item]));
 
@@ -237,9 +252,9 @@ async function navigationFor(siteId: string, locale: CmsLocale, menuKey: string)
   const postIds = items.filter((item) => item.target_type === "post" && item.post).map((item) => String(item.post));
   const eventIds = items.filter((item) => item.target_type === "event" && item.event).map((item) => String(item.event));
   const [pages, posts, events] = await Promise.all([
-    pageIds.length ? list<CmsRecord>("page_translations", { filter: `site = ${quoted(siteId)} && locale = ${quoted(locale)} && (${pageIds.map((id) => `page = ${quoted(id)}`).join(" || ")})` }) : [],
-    postIds.length ? list<CmsRecord>("post_translations", { filter: `site = ${quoted(siteId)} && locale = ${quoted(locale)} && (${postIds.map((id) => `post = ${quoted(id)}`).join(" || ")})` }) : [],
-    eventIds.length ? list<CmsRecord>("event_translations", { filter: `site = ${quoted(siteId)} && locale = ${quoted(locale)} && (${eventIds.map((id) => `event = ${quoted(id)}`).join(" || ")})` }) : [],
+    pageIds.length ? list<CmsRecord>("page_translations", { filter: `site = ${quoted(siteId)} && locale = ${quoted(locale)} && (${pageIds.map((id) => `page = ${quoted(id)}`).join(" || ")})`, signal }) : [],
+    postIds.length ? list<CmsRecord>("post_translations", { filter: `site = ${quoted(siteId)} && locale = ${quoted(locale)} && (${postIds.map((id) => `post = ${quoted(id)}`).join(" || ")})`, signal }) : [],
+    eventIds.length ? list<CmsRecord>("event_translations", { filter: `site = ${quoted(siteId)} && locale = ${quoted(locale)} && (${eventIds.map((id) => `event = ${quoted(id)}`).join(" || ")})`, signal }) : [],
   ]);
   const targets = new Map<string, string>();
   pages.forEach((record) => targets.set(`page:${record.page}`, String(record.path || "/")));
@@ -272,19 +287,30 @@ async function navigationFor(siteId: string, locale: CmsLocale, menuKey: string)
   return roots;
 }
 
-export async function getSiteContext(locale: CmsLocale = "sv"): Promise<SiteContext> {
-  const site = await first<SiteRecord>("sites", `key = ${quoted(SITE_KEY)} && active = true`, "logo,favicon,social_image");
+export async function getSiteRecord(options: { siteId?: string; signal?: AbortSignal } = {}): Promise<SiteRecord> {
+  const siteId = options.siteId;
+  const site = await first<SiteRecord>("sites", `${siteId ? `id = ${quoted(siteId)}` : `key = ${quoted(SITE_KEY)}`} && active = true`, "logo,favicon,social_image", options.signal);
   if (!site) throw new Error("SITE_NOT_FOUND");
+  return site;
+}
+
+export async function getSiteContext(locale: CmsLocale = "sv", options: { siteId?: string; signal?: AbortSignal } = {}): Promise<SiteContext> {
+  const site = await getSiteRecord(options);
   const [translation, navigation, footerNavigation, allMedia] = await Promise.all([
-    first<SiteTranslation>("site_translations", `site = ${quoted(site.id)} && locale = ${quoted(locale)}`),
-    navigationFor(site.id, locale, PRIMARY_MENU_KEY),
-    navigationFor(site.id, locale, FOOTER_MENU_KEY),
-    list<MediaRecord>("media", { filter: `site = ${quoted(site.id)} && is_public = true`, perPage: 500 }),
+    first<SiteTranslation>("site_translations", `site = ${quoted(site.id)} && locale = ${quoted(locale)}`, undefined, options.signal),
+    navigationFor(site.id, locale, PRIMARY_MENU_KEY, options.signal),
+    navigationFor(site.id, locale, FOOTER_MENU_KEY, options.signal),
+    list<MediaRecord>("media", { filter: `site = ${quoted(site.id)} && is_public = true`, perPage: 500, signal: options.signal }),
   ]);
   const media = new Map(allMedia.map((record) => [record.id, record]));
   const expandedLogo = asRecord(site.expand?.logo) as MediaRecord | null;
   const logo = expandedLogo || media.get(String(site.logo || "")) || null;
   return { site, translation, navigation, footerNavigation, logo, media, locale };
+}
+
+export async function getReferencedMedia(siteId: string, ids: string[], signal: AbortSignal): Promise<MediaRecord[]> {
+  if (!ids.length) return [];
+  return list<MediaRecord>("media", { filter: `site = ${quoted(siteId)} && is_public = true && (${ids.map((id) => `id = ${quoted(id)}`).join(" || ")})`, signal });
 }
 
 function blocksFrom(value: unknown): { version: 1; items: ContentBlock[] } {

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { PageScreen } from "@/components/PageScreen";
+import { PreviewScreen } from "@/components/PreviewScreen";
 import type { ContentTranslation, SiteContext } from "@/lib/cms";
-import { contentSocialImage, getContent, getRedirect, getSiteContext, isCmsConfigured, mediaUrl, siteHref } from "@/lib/cms";
+import { getContent, getRedirect, getSiteContext, isCmsConfigured, siteHref } from "@/lib/cms";
+import { applyMetadata } from "@/lib/metadata";
 
 type LoadState =
   | { status: "loading" }
@@ -9,40 +11,11 @@ type LoadState =
   | { status: "not-found" }
   | { status: "error"; message: string };
 
-function upsertMeta(selector: string, attributes: Record<string, string>) {
-  let element = document.head.querySelector<HTMLMetaElement>(selector);
-  if (!element) {
-    element = document.createElement("meta");
-    document.head.append(element);
-  }
-  Object.entries(attributes).forEach(([key, value]) => element?.setAttribute(key, value));
-}
-
-function applyMetadata(context: SiteContext, content: ContentTranslation) {
-  const siteTitle = context.translation?.title || context.site.name;
-  const title = content.seo_title || content.title;
-  const description = content.seo_description || content.summary || context.translation?.description || "";
-  const image = contentSocialImage(content, context.media) || context.media.get(String(context.site.social_image || ""));
-  document.title = title === siteTitle ? title : `${title} | ${siteTitle}`;
-  if (description) {
-    upsertMeta('meta[name="description"]', { name: "description", content: description });
-    upsertMeta('meta[property="og:description"]', { property: "og:description", content: description });
-  }
-  upsertMeta('meta[property="og:title"]', { property: "og:title", content: title });
-  if (image) upsertMeta('meta[property="og:image"]', { property: "og:image", content: mediaUrl(image, "1600x900") });
-  if (content.no_index) upsertMeta('meta[name="robots"]', { name: "robots", content: "noindex, nofollow" });
-  if (content.canonical_url) {
-    let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.rel = "canonical";
-      document.head.append(canonical);
-    }
-    canonical.href = content.canonical_url;
-  }
-}
-
 export default function App() {
+  return new URL(window.location.href).searchParams.has("preview") ? <PreviewScreen /> : <PublicPage />;
+}
+
+function PublicPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
   useEffect(() => {
@@ -55,7 +28,8 @@ export default function App() {
       try {
         const context = await getSiteContext("sv");
         const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-        const path = (base && window.location.pathname.startsWith(base) ? window.location.pathname.slice(base.length) : window.location.pathname) || "/";
+        const withinBase = window.location.pathname === base || window.location.pathname.startsWith(`${base}/`);
+        const path = (base && withinBase ? window.location.pathname.slice(base.length) : window.location.pathname) || "/";
         const content = await getContent(context.site.id, path, context.locale);
         if (!content) {
           const target = await getRedirect(context.site.id, path, context.locale);

@@ -14,6 +14,13 @@
   --shadow: 0 24px 64px rgb(26 12 5 / 18%);
 }
 
+html[data-cms-preview] body { padding-bottom: 100px; }
+.preview-status { align-items: center; background: var(--ink); border-top: 2px solid var(--copper-bright); bottom: 0; box-shadow: var(--shadow); color: var(--cream); display: flex; flex-wrap: wrap; font-size: .85rem; gap: 8px 24px; justify-content: center; left: 0; padding: 14px 24px; position: fixed; right: 0; z-index: 1000; }
+.preview-status strong { color: var(--sand); }
+.preview-status[data-state="disconnected"] { border-color: var(--sand); }
+.preview-placeholder { align-items: center; background: rgb(166 83 50 / 8%); border: 1px dashed var(--copper); color: var(--copper); display: flex; justify-content: center; min-height: 180px; padding: 24px; text-align: center; }
+.hero .preview-placeholder { border-color: var(--sand); color: var(--sand); margin-top: 24px; min-height: 100px; }
+
 * { box-sizing: border-box; }
 
 html {
