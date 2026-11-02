@@ -1,10 +1,6 @@
 import type { ReactNode } from "react";
 import { siteHref, type RichTextNode } from "@/lib/cms";
-
-function safeHref(value: unknown) {
-  if (typeof value !== "string") return "";
-  return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(value) ? value : "";
-}
+import { safeLink } from "@/lib/links";
 
 function withMarks(node: RichTextNode, content: ReactNode, key: string): ReactNode {
   return (node.marks || []).reduce<ReactNode>((child, mark, index) => {
@@ -16,7 +12,7 @@ function withMarks(node: RichTextNode, content: ReactNode, key: string): ReactNo
       case "strike": return <s key={markKey}>{child}</s>;
       case "code": return <code key={markKey}>{child}</code>;
       case "link": {
-        const href = safeHref(mark.attrs?.href);
+        const href = safeLink(mark.attrs?.href);
         if (!href) return child;
         const external = /^https?:\/\//i.test(href);
         return <a key={markKey} href={siteHref(href)} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}>{child}</a>;
