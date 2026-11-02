@@ -1,7 +1,0 @@
-[install]
-# Supply-chain protection: only install package versions published at least 5 days ago
-minimumReleaseAge = 432000 # seconds (5 days)
-
-# Bypass the age gate for vetted security releases by pinning the exact version,
-# e.g. ["some-package@1.2.4"]. Remove entries once the release is older than 5 days.
-minimumReleaseAgeExcludes = []

@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Quarantine new releases before Dependabot proposes them (version updates only;
+    # security updates are never delayed by cooldown)
+    cooldown:
+      default-days: 5
+      semver-patch-days: 5
+      semver-minor-days: 7
+      semver-major-days: 30
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 5
