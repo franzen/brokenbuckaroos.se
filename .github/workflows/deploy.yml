@@ -31,7 +31,7 @@ jobs:
           VITE_CMS_URL: ${{ vars.CMS_URL }}
           VITE_CMS_SITE_KEY: broken-buckaroos
           VITE_SITE_URL: ${{ steps.pages.outputs.base_url }}
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
