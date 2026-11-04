@@ -28,8 +28,10 @@ jobs:
         id: pages
       - run: npm run build
         env:
-          VITE_CMS_URL: ${{ vars.CMS_URL }}
-          VITE_CMS_SITE_KEY: broken-buckaroos
+          VITE_CMS_URL: ${{ vars.VITE_CMS_URL }}
+          VITE_CMS_SITE_KEY: ${{ vars.VITE_CMS_SITE_KEY }}
+          VITE_CMS_PRIMARY_MENU_KEY: ${{ vars.VITE_CMS_PRIMARY_MENU_KEY }}
+          VITE_CMS_FOOTER_MENU_KEY: ${{ vars.VITE_CMS_FOOTER_MENU_KEY }}
           VITE_SITE_URL: ${{ steps.pages.outputs.base_url }}
       - uses: actions/upload-pages-artifact@v5
         with:
